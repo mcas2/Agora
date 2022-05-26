@@ -193,6 +193,7 @@ var controller = {
                     });
                 }
 
+				//Método conflictivo
                 if (user && user.email == params.email) {
                     return res.status(200).send({
                         message: "El email no puede ser modificado",
@@ -225,14 +226,53 @@ var controller = {
         }
     },
 
-	uploadAvatar: function(req, res){
-		
+	uploadAvatar: function (req, res) {
+        var file_name = 'Avatar no subido...';
 
-		return res.status(200).send({
-			status: 'success',
-			message: 'Upload AVATAR'
-		})
-	}
+        console.log(req.files);
+
+        if (!req.files) {
+            return res.status(404).send({
+                status: 'success',
+                message: file_name
+            });
+        }
+
+        var file_path = req.files.file.path;
+        var file_split = file_path.split('/');
+
+        var file_name = file_split[2];
+
+        var ext_split = file_name.split('.');
+        var file_ext = ext_split[1];
+
+        if (file_ext != 'png' && file_ext != 'jpg' && file_ext != 'jpeg' && file_ext != 'gif') {
+            fs.unlink(file_path, (err) => {
+                return res.status(200).send({
+                    status: 'error',
+                    message: 'La extension del archivo no es valida',
+                });
+            });
+        } else {
+            var userId = req.user.sub;
+            console.log(userId);
+
+            User.findByIdAndUpdate({ _id: userId }, { image: file_name }, { new: true }, (err, userUpdated) => {
+                console.log(userUpdated);
+
+                if (err || !userUpdated) {
+                    return res.status(500).send({
+                        status: 'error',
+                        message: 'error al subir la imagen'
+                    });
+                }
+                return res.status(200).send({
+                    status: 'success',
+                    user: userUpdated
+                });
+            });
+        }
+    }
 };
 
 module.exports = controller;
