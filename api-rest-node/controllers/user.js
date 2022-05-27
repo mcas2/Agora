@@ -1,20 +1,22 @@
-"use strict";
+'use strict';
 
-var validator = require("validator");
-var User = require("../models/user");
-var bcrypt = require("bcryptjs");
-var jwt = require("../services/jwt");
+var validator = require('validator');
+var User = require('../models/user');
+var bcrypt = require('bcryptjs');
+var jwt = require('../services/jwt');
+var fs = require('fs');
+var path = require('path');
 
 var controller = {
 	probando: function (req, res) {
 		return res.status(200).send({
-			message: "Soy el método probando",
+			message: 'Soy el método probando',
 		});
 	},
 
 	testeando: function (req, res) {
 		return res.status(200).send({
-			message: "Soy el método testeando",
+			message: 'Soy el método testeando',
 		});
 	},
 
@@ -32,7 +34,7 @@ var controller = {
 			var validate_password = !validator.isEmpty(params.password);
 		} catch (err) {
 			return res.status(200).send({
-				message: "Faltan datos por enviar.",
+				message: 'Faltan datos por enviar.',
 			});
 		}
 
@@ -49,14 +51,14 @@ var controller = {
 			user.name = params.name;
 			user.surname = params.surname;
 			user.email = params.email.toLowerCase();
-			user.rol = "ROLE_USER";
+			user.rol = 'ROLE_USER';
 			user.image = null;
 
 			//Comprobar si el usuario ya existe
 			User.findOne({ email: user.email }, (err, issetUser) => {
 				if (err) {
 					return res.status(500).send({
-						message: "Error al comprobar duplicados.",
+						message: 'Error al comprobar duplicados.',
 					});
 				}
 
@@ -72,19 +74,19 @@ var controller = {
 									if (err) {
 										return res.status(500).send({
 											message:
-												"Error al guardar el usuario.",
+												'Error al guardar el usuario.',
 										});
 									}
 
 									if (!userStored) {
 										return res.status(500).send({
 											message:
-												"El usuario no se ha guardado.",
+												'El usuario no se ha guardado.',
 										});
 									}
 
 									return res.status(200).send({
-										status: "success",
+										status: 'success',
 										user: userStored,
 									});
 								});
@@ -93,13 +95,13 @@ var controller = {
 					});
 				} else {
 					return res.status(500).send({
-						message: "El usuario ya está registrado.",
+						message: 'El usuario ya está registrado.',
 					});
 				}
 			});
 		} else {
 			return res.status(500).send({
-				message: "Validación incorrecta.",
+				message: 'Validación incorrecta.',
 			});
 		}
 	},
@@ -116,27 +118,27 @@ var controller = {
 			var validate_password = !validator.isEmpty(params.password);
 		} catch (err) {
 			return res.status(404).send({
-				message: "Faltan datos por enviar.",
+				message: 'Faltan datos por enviar.',
 			});
 		}
 
 		if (!validate_email || !validate_password) {
 			return res.status(200).send({
-				message: "Los datos son incorrectos. Revíselos, por favor.",
+				message: 'Los datos son incorrectos. Revíselos, por favor.',
 			});
 		}
 
 		User.findOne({ email: params.email.toLowerCase() }, (err, user) => {
 			if (err) {
 				return res.status(500).send({
-					message: "Error en la identificación.",
+					message: 'Error en la identificación.',
 					user,
 				});
 			}
 
 			if (!user) {
 				return res.status(404).send({
-					message: "El usuario no existe",
+					message: 'El usuario no existe',
 					user,
 				});
 			}
@@ -151,13 +153,13 @@ var controller = {
 						user.password = undefined;
 
 						return res.status(200).send({
-							status: "success",
+							status: 'success',
 							user,
 						});
 					}
 				} else {
 					return res.status(404).send({
-						message: "Las credenciales no son correctas.",
+						message: 'Las credenciales no son correctas.',
 						user,
 					});
 				}
@@ -174,7 +176,7 @@ var controller = {
             var validate_email = !validator.isEmpty(params.email) && validator.isEmail(params.email);
         } catch (err) {
             return res.status(200).send({
-                message: "faltan datos por enviar.",
+                message: 'faltan datos por enviar.',
                 params
             });
         }
@@ -188,7 +190,7 @@ var controller = {
             User.findOne({ email: params.email.toLowerCase() }, (err, user) => {
                 if (err) {
                     return res.status(500).send({
-                        message: "Error en la identificación.",
+                        message: 'Error en la identificación.',
                         user
                     });
                 }
@@ -196,9 +198,31 @@ var controller = {
 				//Método conflictivo
                 if (user && user.email == params.email) {
                     return res.status(200).send({
-                        message: "El email no puede ser modificado",
+                        message: 'El email no puede ser modificado',
                     });
-                }
+                } else {
+					User.findOneAndUpdate({ id: userId }, params, { new: true }, (err, userUpdated) => {
+
+						if (err) {
+							return res.status(500).send({
+								status: 'error',
+								message: 'error al actualizar el usuario'
+							});
+						}
+		
+						if (!userUpdated) {
+							return res.status(500).send({
+								status: 'error',
+								message: 'error al actualizar el usuario'
+							});
+						}
+		
+						return res.status(200).send({
+							status: 'success',
+							user: userUpdated
+						});
+					});
+				}
             });
         } else {
 
@@ -272,7 +296,56 @@ var controller = {
                 });
             });
         }
-    }
+    },
+
+	avatar: function (req, res){
+		var fileName = req.params.fileName;
+		var pathFile = './uploads/users/'+fileName;
+
+		fs.exists(pathFile, (exists) => {
+			if(exists){
+				return res.sendFile(path.resolve(pathFile));
+			} else {
+				return res.status(404).send({
+					message: 'La imagen no existe.'
+				});
+			}
+		});
+	},
+
+	getUsers: function(req, res) {
+		User.find().exec((err, users) => {
+			if(err||!users){
+				return res.status(404).send({
+					status: 'error',
+					message: 'No hay usuarios que mostrar'
+				});
+			}
+
+			return res.status(200).send({
+				status: 'success',
+				users
+			});
+		})
+	},
+
+	getUser: function (req, res){
+		var userId = req.params.userId;
+
+		User.findById(userId).exec((err, user) => {
+			if(err||!user){
+				return res.status(404).send({
+					status: 'error',
+					message: 'No existe el usuario.'
+				});
+			}
+
+			return res.status(200).send({
+				status: 'success',
+				user
+			});
+		})
+	}
 };
 
 module.exports = controller;
