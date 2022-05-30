@@ -176,8 +176,7 @@ var controller = {
             var validate_email = !validator.isEmpty(params.email) && validator.isEmail(params.email);
         } catch (err) {
             return res.status(200).send({
-                message: 'faltan datos por enviar.',
-                params
+                message: "faltan datos por enviar.",
             });
         }
 
@@ -190,55 +189,53 @@ var controller = {
             User.findOne({ email: params.email.toLowerCase() }, (err, user) => {
                 if (err) {
                     return res.status(500).send({
-                        message: 'Error en la identificación.',
+                        message: "Error en la identificación.",
                         user
                     });
                 }
 
-				//Método conflictivo
+                //Método conflictivo
                 if (user && user.email == params.email) {
                     return res.status(200).send({
-                        message: 'El email no puede ser modificado',
+                        message: "El email no puede ser modificado",
                     });
                 } else {
-					User.findOneAndUpdate({ id: userId }, params, { new: true }, (err, userUpdated) => {
+                    User.findOneAndUpdate({ id: userId }, params, { new: true }, (err, userUpdated) => {
 
-						if (err) {
-							return res.status(500).send({
-								status: 'error',
-								message: 'error al actualizar el usuario'
-							});
-						}
-		
-						if (!userUpdated) {
-							return res.status(500).send({
-								status: 'error',
-								message: 'error al actualizar el usuario'
-							});
-						}
-		
-						return res.status(200).send({
-							status: 'success',
-							user: userUpdated
-						});
-					});
-				}
+                        if (err) {
+                            return res.status(500).send({
+                                status: 'error',
+                                message: 'error al actualizar el usuario'
+                            });
+                        }
+
+                        if (!userUpdated) {
+                            return res.status(500).send({
+                                status: 'error',
+                                message: 'error al actualizar el usuario'
+                            });
+                        }
+
+                        return res.status(200).send({
+                            status: 'success',
+                            user: userUpdated
+                        });
+                    });
+                }
             });
         } else {
-
-            User.findOneAndUpdate({ id: userId }, params, { new: true }, (err, userUpdated) => {
-
+            User.findOneAndUpdate({ _id: userId }, params, { new: true }, (err, userUpdated) => {
                 if (err) {
                     return res.status(500).send({
                         status: 'error',
-                        message: 'error al actualizar el usuario'
+                        message: 'error al actualizar el usuario (err)'
                     });
                 }
 
                 if (!userUpdated) {
                     return res.status(500).send({
                         status: 'error',
-                        message: 'error al actualizar el usuario'
+                        message: 'error al actualizar el usuario (!userUpdated)'
                     });
                 }
 
@@ -253,8 +250,6 @@ var controller = {
 	uploadAvatar: function (req, res) {
         var file_name = 'Avatar no subido...';
 
-        console.log(req.files);
-
         if (!req.files) {
             return res.status(404).send({
                 status: 'success',
@@ -262,10 +257,12 @@ var controller = {
             });
         }
 
-        var file_path = req.files.file.path;
+		console.log("req file path");
+		console.log(req.files.file0.path);
+		var file_path = req.files.file0.path;
         var file_split = file_path.split('/');
 
-        var file_name = file_split[2];
+        file_name = file_split[2];
 
         var ext_split = file_name.split('.');
         var file_ext = ext_split[1];
