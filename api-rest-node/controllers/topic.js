@@ -1,268 +1,298 @@
-"use strict";
+'use stric'
 
-var validator = require("validator");
-var Topic = require("../models/topic");
+var validator = require('validator');
+var Topic = require('../models/topic');
 
 var controller = {
-	test: function (req, res) {
-		return res.status(200).send({
-			message: "Hola",
-		});
-	},
+    test: function (req, res) {
+        return res.status(200).send({
+            message: 'Hola que tal'
+        });
+    },
+    save: function (req, res) {
 
-	save: function (req, res) {
-		var params = req.body;
+        //Recoger parametros por post
+        var params = req.body;
 
-		try {
-			var validate_title = !validator.isEmpty(params.title);
-			var validate_content = !validator.isEmpty(params.content);
-			var validate_lang = !validator.isEmpty(params.lang);
-		} catch (err) {
-			return res.status(200).send({
-				message: "Faltan datos para enviar ",
-			});
-		}
+        //Validar los datos
+        try {
+            var validate_title = !validator.isEmpty(params.title);
+            var validate_content = !validator.isEmpty(params.content);
+            var validate_lang = !validator.isEmpty(params.lang);
 
-		if (validate_content && validate_title && validate_lang) {
-			var topic = new Topic();
 
-			topic.title = params.title;
-			topic.content = params.content;
-			topic.code = params.code;
-			topic.lang = params.lang;
-			topic.user = req.user.sub;
+        } catch (err) {
+            return res.status(200).send({
+                message: 'Faltan datos por enviar'
+            });
+        }
 
-			topic.save((err, topicStored) => {
-				if (err || !topicStored) {
-					return res.status(404).send({
-						message: "El tema no se ha guardado",
-					});
-				}
+        if (validate_content && validate_title && validate_lang) {
+            //Crear objeto a guardar
+            var topic = new Topic();
 
-				return res.status(200).send({
-					status: "success",
-					topic: topicStored,
-				});
-			});
-		} else {
-			return res.status(200).send({
-				message: "Los datos no son válidos",
-			});
-		}
-	},
+            //Asignarle valor a las propiedades del objeto
+            topic.title = params.title;
+            topic.content = params.content;
+            topic.code = params.code;
+            topic.lang = params.lang;
+            topic.user = req.user.sub;
 
-	getTopics: function (req, res) {
-		if (
-			req.params.page == null ||
-			req.params.page == undefined ||
-			req.params.page == "0" ||
-			!req.params.page
-		) {
-			var page = 1;
-		} else {
-			var page = parseInt(req.params.page);
-		}
+            //Guardar el topic
+            topic.save((err, topicStored) => {
 
-		var options = {
-			sort: { date: -1 },
-			populate: 'user',
-			limit: 5,
-			page: page
-		};
+                if (err || !topicStored) {
+                    return res.status(404).send({
+                        status: 'error',
+                        message: 'El tema no se ha guardado'
+                    });
+                }
 
-		Topic.paginate({}, options, (err, topics) => {
+                //Devolver respuesta
+                return res.status(200).send({
+                    status: 'success',
+                    topic: topicStored
+                });
+            });
+        } else {
+            return res.status(400).send({
+                message: 'Los datos no son validos'
+            });
+        }
+    },
 
-			if(err){
-				return res.status(500).send({
-					status: 'error',
-					message: 'Error al hacer la consulta'
-				});
-			}
+    getTopics: function (req, res) {
 
-			if (!topics){
-				return res.status(404).send({
-					status: 'error',
-					message: 'No hay topics'
-				});
-			}
+        //Cargar la libreria de paginacion en la clase(MODELO)
 
-			return res.status(200).send({
-				status: 'success',
-				topics: topics.docs,
-				totalDocs: topics.totalDocs,
-				totalPages: topics. totalPages
-			});
-		});
-	},
+        //Crear variable para recoger la pagina actual
+        if (!req.params.page || req.params.page == 0 || req.params.page == "0" || req.params.page == null || req.params.page == undefined) {
+            var page = 1;
+        } else {
+            var page = parseInt(req.params.page);
+        }
 
-	getTopicsByUser: function (req, res) {
+        //Indicar las opciones de paginacion
+        var options = {
+            sort: { date: -1 },
+            populate: 'user',
+            limit: 5,
+            page: page
+        };
 
-		var userId = req.params.user;
+        //Find paginado
+        Topic.paginate({}, options, (err, topics) => {
 
-		Topic.find({
-			user: userId
-		})
-		.sort([['date', 'descending']])
-		.exec((err, topics) => {
-			if(err){
-				return res.status(500).send({
-					status: 'error',
-					message: 'Error en la petición'
-				});
-			}
+            if (err) {
+                return res.status(500).send({
+                    status: 'error',
+                    message: 'error al hacer la consulta'
+                });
+            }
+            if (!topics) {
+                return res.status(404).send({
+                    status: 'notfound',
+                    message: 'no hay topics'
+                });
+            }
 
-			if (!topics){
-				return res.status(404).send({
-					status: 'error',
-					message: 'No hay temas para mostrar'
-				});
-			}
+            //Devolver resultado(topics,total de topics,total de paginas
+            return res.status(200).send({
+                status: 'success',
+                topics: topics.docs,
+                totalDocs: topics.totalDocs,
+                totalPages: topics.totalPages
+            });
+        });
+    },
 
-			return res.status(200).send({
-				status: 'success',
-				topics
-			});
-		});
-	},
+    getTopicsByUser: function (req, res) {
 
-	getTopic: function(req, res){
-		var topicId = req.params.id;
+        //Conseguir el id del usuario
+        var userId = req.params.user;
 
-		Topic.findById(topicId)
-			.populate('user')
-			.exec((err, topic) => {
-				if(err){
-					return res.status(500).send({
-						status: 'error',
-						message: 'Error en la petición'
-					});
-				}
-	
-				if (!topic){
-					return res.status(404).send({
-						status: 'error',
-						message: 'No hay temas para mostrar'
-					});
-				}
+        //Hacer un find con la condicion de usuario
+        Topic.find({
+            user: userId
+        })
+            .sort([['date', 'descending']])
+            .exec((err, topics) => {
+                if (err) {
+                    return res.status(500).send({
+                        status: 'error',
+                        message: 'error en la peticion'
+                    });
+                }
+                if (!topics) {
+                    return res.status(404).send({
+                        status: 'error',
+                        message: 'No hay temas para mostrar'
+                    });
+                }
+                //Devolver un resultado
+                return res.status(200).send({
+                    status: 'success',
+                    topics
+                });
+            });
+    },
 
-				return res.status(200).send({
-					message: 'Soy el getTopic',
-					topic
-				});
-			});
-	},
+    getTopic: function (req, res) {
 
-	update: function(req, res){
-		var topicId = req.params.id;
+        //Scar el id del topic
+        var topicId = req.params.id;
 
-		var params = req.body;
+        //Find por id del topic
+        Topic.findById(topicId)
+            .populate('user')
+            .populate('comments.user')
+            .exec((err, topic) => {
+                if (err) {
+                    return res.status(500).send({
+                        status: 'error',
+                        message: 'error en la peticion'
+                    });
+                }
+                if (!topic) {
+                    return res.status(404).send({
+                        status: 'error',
+                        message: 'No existe el topic'
+                    });
+                }
+                //Devolver el resultado
+                return res.status(200).send({
+                    status: 'success',
+                    topic
+                });
+            });
+    },
 
-		try {
-			var validate_title = !validator.isEmpty(params.title);
-			var validate_content = !validator.isEmpty(params.content);
-			var validate_lang = !validator.isEmpty(params.lang);
-		} catch (err) {
-			return res.status(200).send({
-				message: "Faltan datos por enviar ",
-			});
-		}
+    update: function (req, res) {
 
-		if (validate_title && validate_content && validate_lang) {
-			var update = {
-				title: params.title,
-				content: params.content,
-				code: params.code,
-				lang: params.lang
-			}
+        //Recoger el id del topic
+        var topicId = req.params.id;
 
-			Topic.findOneAndUpdate({_id: topicId, user:req.user.sub}, update, {new:true},(err, topicUpdated) => {
-				if(err){
-					return res.status(500).send({
-						status: 'Error',
-						message: 'Error en la petición'
-					});
-				}
+        //Recoger los datos que llegan de post
+        var params = req.body;
 
-				if(!topicUpdated){
-					return res.status(404).send({
-						status: 'Error',
-						message: 'No se ha actualizado el tema'
-					});
-				}
-				
-				
-				return res.status(200).send({
-						status: 'success',
-						topic: topicUpdated
-					});
-				}
-			);
- 
+        //Validar datos
+        try {
+            var validate_title = !validator.isEmpty(params.title);
+            var validate_content = !validator.isEmpty(params.content);
+            var validate_lang = !validator.isEmpty(params.lang);
 
-		} else {
-			return res.status(200).send({
-				message: 'La validación de datos no es correcta.',
-			});
-		}
-	},
 
-	delete: function(req, res){
-		var topicId = req.params.id;
+        } catch (err) {
+            return res.status(200).send({
+                message: 'Faltan datos por enviar'
+            });
+        }
 
-		Topic.findOneAndDelete({_id: topicId, user: req.user.sub}, (err, topicRemoved) => {
-			if(err){
-				return res.status(500).send({
-					status: 'Error',
-					message: 'Error en la petición'
-				});
-			}
+        if (validate_title && validate_content && validate_lang) {
+            //Montar un JSON con los datos modificables
+            var update = {
+                title: params.title,
+                content: params.content,
+                code: params.code,
+                lang: params.lang
+            };
 
-			if(!topicRemoved){
-				return res.status(404).send({
-					status: 'Error',
-					message: 'No se ha borrado el tema'
-				});
-			}
+            console.log(update);
 
-			return res.status(200).send({
-				status: 'success',
-				topic: topicRemoved
-			});
-		});
-	},
+            //Find and update del topic por id y por id usuario
+            Topic.findOneAndUpdate({ _id: topicId, user: req.user.sub }, update, { new: true }, (err, topicUpdated) => {
 
-	search: function(req, res) {
+                if (err) {
+                    return res.status(500).send({
+                        status: 'error',
+                        message: 'error en la peticion'
+                    });
+                }
+                console.log(topicUpdated);
+                if (!topicUpdated) {
+                    return res.status(404).send({
+                        status: 'error',
+                        message: 'El topìc no se ha actualizado'
+                    });
+                }
+                //Devolver respuesta
+                return res.status(200).send({
+                    status: 'success',
+                    topic: topicUpdated
+                });
+            });
+        } else {
+            return res.status(200).send({
+                message: 'La validacion de los datos no es correcta'
+            });
+        }
+    },
 
-		var searchString = req.params.search;
+    delete: function (req, res) {
 
-		Topic.find({ "$or": [
-			{"title": {"$regex": searchString, "$options": "i"}},
-			{"content": {"$regex": searchString, "$options": "i"}},
-			{"code": {"$regex": searchString, "$options": "i"}},
-			{"lang": {"$regex": searchString, "$options": "i"}}
-		]})
-		.sort([['date', 'descending']])
-		.exec((err, topics) => {
-			if(err){
-				return res.status(500).send({
-					status: 'Error',
-					message: 'Error en la petición'
-				});
-			}
-			
-			if(!topics){
-				return res.status(404).send({
-					status: 'Error',
-					message: 'No existen temas que coincidan con tu búsqueda.'
-				});
-			}
+        //Recoger el id del topic de la url
+        var topicId = req.params.id;
 
-			return res.status(200).send({
-				status: 'success',
-				topics
-			});
-		});
-	}
+        //Find and delete por topic id y por user id
+        Topic.findOneAndDelete({ _id: topicId, user: req.user.sub }, (err, topicRemoved) => {
+
+            if (err) {
+                return res.status(500).send({
+                    status: 'error',
+                    message: 'error en la peticion'
+                });
+            }
+
+            if (!topicRemoved) {
+                return res.status(404).send({
+                    status: 'error',
+                    message: 'El topìc no se ha borrado'
+                });
+            }
+            //Devolver una respuesta
+            return res.status(200).send({
+                status: 'success',
+                topic: topicRemoved
+            });
+        });
+    },
+
+    search: function (req, res) {
+
+        //Sacar el string a buscar
+        var searchString = req.params.search;
+
+        //Find or
+        Topic.find({
+            "$or": [
+                { "title": { "$regex": searchString, "$options": "i" } },
+                { "content": { "$regex": searchString, "$options": "i" } },
+                { "code": { "$regex": searchString, "$options": "i" } },
+                { "lang": { "$regex": searchString, "$options": "i" } }
+            ]
+        })
+        .populate('user')
+        .sort([['date', 'descending']]).exec((err, topics) => {
+            if (err) {
+                return res.status(500).send({
+                    status: 'error',
+                    message: 'Error en la peticion'
+                });
+            }
+            if (!topics) {
+                return res.status(404).send({
+                    status: 'error',
+                    message: 'El topìc no se ha encontrado'
+                });
+            }
+
+            //Devolver el resultadoi
+            return res.status(200).send({
+                status: 'success',
+                topics
+            });
+        });
+    }
 };
 
 module.exports = controller;

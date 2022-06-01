@@ -18,7 +18,8 @@
     "moment": "^2.24.0",
     "mongoose": "^6.3.4",
     "mongoose-paginate-v2": "^1.6.3",
-    "validator":"^10.11.0"
+    "multer": "^1.4.5-lts.1",
+    "validator": "^10.11.0"
   },
   "devDependencies": {
     "nodemon": "^1.18.9"

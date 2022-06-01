@@ -1,22 +1,23 @@
-'use strict';
+"use strict";
 
-var validator = require('validator');
-var User = require('../models/user');
-var bcrypt = require('bcryptjs');
-var jwt = require('../services/jwt');
+var validator = require("validator");
+var User = require("../models/user");
+var bcrypt = require("bcryptjs");
 var fs = require('fs');
+var jwt = require("../services/jwt");
 var path = require('path');
+//const { path } = require("express/lib/application");
 
 var controller = {
 	probando: function (req, res) {
 		return res.status(200).send({
-			message: 'Soy el método probando',
+			message: "Soy el método probando",
 		});
 	},
 
 	testeando: function (req, res) {
 		return res.status(200).send({
-			message: 'Soy el método testeando',
+			message: "Soy el método testeando",
 		});
 	},
 
@@ -34,7 +35,7 @@ var controller = {
 			var validate_password = !validator.isEmpty(params.password);
 		} catch (err) {
 			return res.status(200).send({
-				message: 'Faltan datos por enviar.',
+				message: "Faltan datos por enviar.",
 			});
 		}
 
@@ -51,14 +52,14 @@ var controller = {
 			user.name = params.name;
 			user.surname = params.surname;
 			user.email = params.email.toLowerCase();
-			user.rol = 'ROLE_USER';
+			user.rol = "ROLE_USER";
 			user.image = null;
 
 			//Comprobar si el usuario ya existe
 			User.findOne({ email: user.email }, (err, issetUser) => {
 				if (err) {
 					return res.status(500).send({
-						message: 'Error al comprobar duplicados.',
+						message: "Error al comprobar duplicados.",
 					});
 				}
 
@@ -74,19 +75,19 @@ var controller = {
 									if (err) {
 										return res.status(500).send({
 											message:
-												'Error al guardar el usuario.',
+												"Error al guardar el usuario.",
 										});
 									}
 
 									if (!userStored) {
 										return res.status(500).send({
 											message:
-												'El usuario no se ha guardado.',
+												"El usuario no se ha guardado.",
 										});
 									}
 
 									return res.status(200).send({
-										status: 'success',
+										status: "success",
 										user: userStored,
 									});
 								});
@@ -95,13 +96,13 @@ var controller = {
 					});
 				} else {
 					return res.status(500).send({
-						message: 'El usuario ya está registrado.',
+						message: "El usuario ya está registrado.",
 					});
 				}
 			});
 		} else {
 			return res.status(500).send({
-				message: 'Validación incorrecta.',
+				message: "Validación incorrecta.",
 			});
 		}
 	},
@@ -118,27 +119,27 @@ var controller = {
 			var validate_password = !validator.isEmpty(params.password);
 		} catch (err) {
 			return res.status(404).send({
-				message: 'Faltan datos por enviar.',
+				message: "Faltan datos por enviar.",
 			});
 		}
 
 		if (!validate_email || !validate_password) {
 			return res.status(200).send({
-				message: 'Los datos son incorrectos. Revíselos, por favor.',
+				message: "Los datos son incorrectos. Revíselos, por favor.",
 			});
 		}
 
 		User.findOne({ email: params.email.toLowerCase() }, (err, user) => {
 			if (err) {
 				return res.status(500).send({
-					message: 'Error en la identificación.',
+					message: "Error en la identificación.",
 					user,
 				});
 			}
 
 			if (!user) {
 				return res.status(404).send({
-					message: 'El usuario no existe',
+					message: "El usuario no existe",
 					user,
 				});
 			}
@@ -153,13 +154,13 @@ var controller = {
 						user.password = undefined;
 
 						return res.status(200).send({
-							status: 'success',
+							status: "success",
 							user,
 						});
 					}
 				} else {
 					return res.status(404).send({
-						message: 'Las credenciales no son correctas.',
+						message: "Las credenciales no son correctas.",
 						user,
 					});
 				}
@@ -168,180 +169,178 @@ var controller = {
 	},
 
 	update: function (req, res) {
-        var params = req.body;
+		var params = req.body;
 
-        try {
-            var validate_name = !validator.isEmpty(params.name);
-            var validate_surname = !validator.isEmpty(params.surname);
-            var validate_email = !validator.isEmpty(params.email) && validator.isEmail(params.email);
-        } catch (err) {
-            return res.status(200).send({
-                message: "faltan datos por enviar.",
-            });
-        }
+		try {
+			var validate_name = !validator.isEmpty(params.name);
+			var validate_surname = !validator.isEmpty(params.surname);
+			var validate_email = !validator.isEmpty(params.email) && validator.isEmail(params.email);
+		} catch (err) {
+			return res.status(200).send({
+				message: "faltan datos por enviar.",
+			});
+		}
 
 
-        delete params.password;
+		delete params.password;
 
-        var userId = req.user.sub;
+		var userId = req.user.sub;
 
-        if (req.user.email != params.email) {
-            User.findOne({ email: params.email.toLowerCase() }, (err, user) => {
-                if (err) {
-                    return res.status(500).send({
-                        message: "Error en la identificación.",
-                        user
-                    });
-                }
+		if (req.user.email != params.email) {
+			User.findOne({ email: params.email.toLowerCase() }, (err, user) => {
+				if (err) {
+					return res.status(500).send({
+						message: "Error en la identificación.",
+						user
+					});
+				}
 
-                //Método conflictivo
-                if (user && user.email == params.email) {
-                    return res.status(200).send({
-                        message: "El email no puede ser modificado",
-                    });
-                } else {
-                    User.findOneAndUpdate({ id: userId }, params, { new: true }, (err, userUpdated) => {
+				//Método conflictivo
+				if (user && user.email == params.email) {
+					return res.status(200).send({
+						message: "El email no puede ser modificado",
+					});
+				} else {
+					User.findOneAndUpdate({ _id: userId }, params, { new: true }, (err, userUpdated) => {
 
-                        if (err) {
-                            return res.status(500).send({
-                                status: 'error',
-                                message: 'error al actualizar el usuario'
-                            });
-                        }
+						if (err) {
+							return res.status(500).send({
+								status: 'error',
+								message: 'error al actualizar el usuario'
+							});
+						}
 
-                        if (!userUpdated) {
-                            return res.status(500).send({
-                                status: 'error',
-                                message: 'error al actualizar el usuario'
-                            });
-                        }
+						if (!userUpdated) {
+							return res.status(500).send({
+								status: 'error',
+								message: 'error al actualizar el usuario'
+							});
+						}
 
-                        return res.status(200).send({
-                            status: 'success',
-                            user: userUpdated
-                        });
-                    });
-                }
-            });
-        } else {
-            User.findOneAndUpdate({ _id: userId }, params, { new: true }, (err, userUpdated) => {
-                if (err) {
-                    return res.status(500).send({
-                        status: 'error',
-                        message: 'error al actualizar el usuario (err)'
-                    });
-                }
+						return res.status(200).send({
+							status: 'success',
+							user: userUpdated
+						});
+					});
+				}
+			});
+		} else {
 
-                if (!userUpdated) {
-                    return res.status(500).send({
-                        status: 'error',
-                        message: 'error al actualizar el usuario (!userUpdated)'
-                    });
-                }
+			User.findOneAndUpdate({ _id: userId }, params, { new: true }, (err, userUpdated) => {
+				console.log(userUpdated);
+				if (err) {
+					return res.status(500).send({
+						status: 'error',
+						message: 'error al actualizar el usuario'
+					});
+				}
 
-                return res.status(200).send({
-                    status: 'success',
-                    user: userUpdated
-                });
-            });
-        }
-    },
+				if (!userUpdated) {
+					return res.status(500).send({
+						status: 'error',
+						message: 'error al actualizar el usuario'
+					});
+				}
+
+				return res.status(200).send({
+					status: 'success',
+					user: userUpdated
+				});
+			});
+		}
+	},
 
 	uploadAvatar: function (req, res) {
-        var file_name = 'Avatar no subido...';
+		var file_name = 'Avatar no subido...';
 
-        if (!req.files) {
-            return res.status(404).send({
-                status: 'success',
-                message: file_name
-            });
-        }
+		if (!req.file) {
+			return res.status(404).send({
+				status: 'success',
+				message: file_name
+			});
+		}
 
-		console.log("req file path");
-		console.log(req.files.file0.path);
-		var file_path = req.files.file0.path;
-        var file_split = file_path.split('/');
+		var file_path = req.file.path;
+		var file_split = file_path.split('/');
 
-        file_name = file_split[2];
+		var file_name = file_split[2];
 
-        var ext_split = file_name.split('.');
-        var file_ext = ext_split[1];
+		var ext_split = file_name.split('.');
+		var file_ext = ext_split[1];
 
-        if (file_ext != 'png' && file_ext != 'jpg' && file_ext != 'jpeg' && file_ext != 'gif') {
-            fs.unlink(file_path, (err) => {
-                return res.status(200).send({
-                    status: 'error',
-                    message: 'La extension del archivo no es valida',
-                });
-            });
-        } else {
-            var userId = req.user.sub;
-            console.log(userId);
+		if (file_ext != 'png' && file_ext != 'jpg' && file_ext != 'jpeg' && file_ext != 'gif') {
+			fs.unlink(file_path, (err) => {
+				return res.status(200).send({
+					status: 'error',
+					message: 'La extension del archivo no es valida',
+				});
+			});
+		} else {
+			var userId = req.user.sub;
+			console.log(userId);
 
-            User.findByIdAndUpdate({ _id: userId }, { image: file_name }, { new: true }, (err, userUpdated) => {
-                console.log(userUpdated);
+			User.findByIdAndUpdate({ _id: userId }, { image: file_name }, { new: true }, (err, userUpdated) => {
+				console.log(userUpdated);
 
-                if (err || !userUpdated) {
-                    return res.status(500).send({
-                        status: 'error',
-                        message: 'error al subir la imagen'
-                    });
-                }
-                return res.status(200).send({
-                    status: 'success',
-                    user: userUpdated
-                });
-            });
-        }
-    },
+				if (err || !userUpdated) {
+					return res.status(500).send({
+						status: 'error',
+						message: 'error al subir la imagen'
+					});
+				}
+				return res.status(200).send({
+					status: 'success',
+					user: userUpdated
+				});
+			});
+		}
+	},
 
-	avatar: function (req, res){
+	avatar: function (req, res) {
 		var fileName = req.params.fileName;
-		var pathFile = './uploads/users/'+fileName;
+		var pathFile = './uploads/users/' + fileName;
 
 		fs.exists(pathFile, (exists) => {
-			if(exists){
-				return res.sendFile(path.resolve(pathFile));
+			if (exists) {
+				res.sendFile(path.resolve(pathFile));
 			} else {
 				return res.status(404).send({
-					message: 'La imagen no existe.'
+					message: 'La imagen no existe'
 				});
 			}
 		});
 	},
 
-	getUsers: function(req, res) {
+	getUsers: function (req, res) {
 		User.find().exec((err, users) => {
-			if(err||!users){
+			if (err || !users) {
 				return res.status(404).send({
-					status: 'error',
+					startus: 'error',
 					message: 'No hay usuarios que mostrar'
 				});
 			}
-
 			return res.status(200).send({
-				status: 'success',
+				startus: 'success',
 				users
 			});
-		})
+		});
 	},
 
-	getUser: function (req, res){
+	getUser: function (req, res) {
 		var userId = req.params.userId;
 
 		User.findById(userId).exec((err, user) => {
-			if(err||!user){
+			if (err || !user) {
 				return res.status(404).send({
-					status: 'error',
-					message: 'No existe el usuario.'
+					startus: 'error',
+					message: 'No existe el usuario'
 				});
 			}
-
 			return res.status(200).send({
-				status: 'success',
+				startus: 'success',
 				user
 			});
-		})
+		});
 	}
 };
 

@@ -2,9 +2,10 @@
 
 var mongoose = require('mongoose');
 var mongoosePaginate = require('mongoose-paginate-v2');
+
 var Schema = mongoose.Schema;
 
-var CommentSchema =  Schema({
+var CommentSchema = Schema({
 	content: String,
 	date: { type: Date, default: Date.now },
 	user: { type: Schema.ObjectId, ref: 'User' }
@@ -12,7 +13,7 @@ var CommentSchema =  Schema({
 
 var Comment = mongoose.model('Comment', CommentSchema);
 
-var TopicSchema =  Schema({
+var TopicSchema = Schema({
 	title: String,
 	content: String,
 	code: String,
@@ -22,6 +23,7 @@ var TopicSchema =  Schema({
 	comments: [CommentSchema]
 });
 
-TopicSchema.plugin(mongoosePaginate);/*  */
+//Cargar paginacion
+TopicSchema.plugin(mongoosePaginate);
 
 module.exports = mongoose.model('Topic', TopicSchema);
